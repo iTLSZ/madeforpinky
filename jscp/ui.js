@@ -1210,7 +1210,7 @@ function spawnHeartPhotosCentered() {
 
 let heartSequenceTimeout = null;
 
-// Cada foto: POP en corazón → vuela al CENTRO → se desintegra en partículas rosas
+// Cada foto: POP → ZOOM CINEMATOGRÁFICO → vuela al CENTRO → se desintegra en rosas
 function animateHeartPhotosSequence() {
     const photos = Array.from(document.querySelectorAll('.photo'));
     if (photos.length === 0) return;
@@ -1221,50 +1221,58 @@ function animateHeartPhotosSequence() {
 
     function revealNext() {
         if (index >= photos.length) {
-            // Todas desintegradas → lluvia de emojis
-            setTimeout(emojiShowerFinale, 400);
+            setTimeout(emojiShowerFinale, 300);
             return;
         }
 
         const photo = photos[index];
         if (!document.body.contains(photo)) { index++; revealNext(); return; }
 
-        const isMobile = window.innerWidth < 768;
-        const bigScale = isMobile ? 3 : 4.5;
+        const isMobile  = window.innerWidth < 768;
+        const popScale  = isMobile ? 3   : 4.5;   // pop inicial
+        const zoomScale = isMobile ? 5.5 : 7.5;   // zoom cinematográfico (mucho más grande)
 
-        // Fase 1: POP — agranda en su posición del corazón (se puede voltear aquí)
-        photo.style.transition   = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        photo.style.zIndex       = '5000';
-        photo.style.transform    = `translate(-50%, -50%) scale(${bigScale})`;
+        // ── Fase 1: POP rápido ───────────────────────────────────────────
+        photo.style.transition    = 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        photo.style.zIndex        = '5000';
+        photo.style.transform     = `translate(-50%, -50%) scale(${popScale})`;
         photo.style.pointerEvents = 'auto';
         const hint = photo.querySelector('.photo-tap-hint');
         if (hint) hint.style.display = 'block';
 
-        // Fase 2: VOLAR AL CENTRO
+        // ── Fase 2: ZOOM CINEMATOGRÁFICO (como si la cámara se acercara) ─
         setTimeout(() => {
             if (!document.body.contains(photo)) return;
-            photo.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-            photo.style.left  = cx + 'px';
-            photo.style.top   = cy + 'px';
-            photo.style.transform = `translate(-50%, -50%) scale(${bigScale})`;
-        }, 900);
+            photo.style.transition = 'all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)';
+            photo.style.transform  = `translate(-50%, -50%) scale(${zoomScale})`;
+        }, 350);
 
-        // Fase 3: DESINTEGRARSE en el centro — partículas rosas
+        // ── Fase 3: VOLAR AL CENTRO velocidad rápida ─────────────────────
+        setTimeout(() => {
+            if (!document.body.contains(photo)) return;
+            photo.style.transition = 'all 0.35s ease-out';
+            photo.style.left       = cx + 'px';
+            photo.style.top        = cy + 'px';
+            photo.style.transform  = `translate(-50%, -50%) scale(${popScale})`;
+        }, 750);
+
+        // ── Fase 4: DESINTEGRARSE en partículas rosas ────────────────────
         setTimeout(() => {
             if (!document.body.contains(photo)) return;
             spawnPinkDisintegration(cx, cy);
-            photo.style.transition = 'all 0.3s ease-in';
+            photo.style.transition = 'all 0.25s ease-in';
             photo.style.transform  = 'translate(-50%, -50%) scale(0)';
             photo.style.opacity    = '0';
-            setTimeout(() => { if (document.body.contains(photo)) photo.remove(); }, 320);
-        }, 1500);
+            setTimeout(() => { if (document.body.contains(photo)) photo.remove(); }, 280);
+        }, 1100);
 
         index++;
-        heartSequenceTimeout = setTimeout(revealNext, 750);
+        heartSequenceTimeout = setTimeout(revealNext, 500); // ← era 750ms, ahora 500ms
     }
 
     revealNext();
 }
+
 
 // Desintegración en partículas 100% rosas desde el centro
 function spawnPinkDisintegration(cx, cy) {
