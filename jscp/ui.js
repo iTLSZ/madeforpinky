@@ -1101,37 +1101,26 @@ function createHeartPhotoCentered(idx, total) {
     const photoUrl = photoUrls[idx % photoUrls.length];
     preloadPhoto(photoUrl);
 
-    // Obtener mensaje: primero del settings, si no del array por defecto
     const currentSettings = window.settings || settings;
     const pagesArr = currentSettings.pages || [];
     const pageMsg  = pagesArr[idx % pagesArr.length]?.content || '';
     const message  = pageMsg || photoFlipMessages[idx % photoFlipMessages.length];
 
-    // ── Estructura de la tarjeta ──────────────────────────────────────────
     const card = document.createElement('div');
-    card.className = 'photo';           // mantiene la clase para querySelectorAll
+    card.className = 'photo';
     card.style.zIndex = '300';
-    card.style.cursor = 'pointer';
-    card.style.pointerEvents = 'none'; // se activa después del reveal
+    card.style.pointerEvents = 'none';
 
-    // Inner (contenedor de flip 3D)
     const inner = document.createElement('div');
     inner.className = 'photo-card-inner';
 
-    // Frente — la foto
     const front = document.createElement('div');
     front.className = 'photo-card-front';
     const img = document.createElement('img');
     img.src = photoUrl;
     img.draggable = false;
-    const tapHint = document.createElement('div');
-    tapHint.className = 'photo-tap-hint';
-    tapHint.textContent = '💕 toca';
-    tapHint.style.display = 'none'; // aparece al revelar
     front.appendChild(img);
-    front.appendChild(tapHint);
 
-    // Reverso — el mensaje
     const back = document.createElement('div');
     back.className = 'photo-card-back';
     const msgEl = document.createElement('p');
@@ -1143,7 +1132,6 @@ function createHeartPhotoCentered(idx, total) {
     inner.appendChild(back);
     card.appendChild(inner);
 
-    // ── Posición en el corazón ────────────────────────────────────────────
     const centerX = window.innerWidth * 0.5;
     const centerY = window.innerHeight * 0.5;
     const t = (idx / total) * 2 * Math.PI;
@@ -1170,13 +1158,11 @@ function createHeartPhotoCentered(idx, total) {
         card.style.top  = (centerY + targetY) + 'px';
     });
 
-    // ── Flip al tocar ─────────────────────────────────────────────────────
     let flipped = false;
     function doFlip(e) {
         e.stopPropagation();
         flipped = !flipped;
         inner.style.transform = flipped ? 'rotateY(180deg)' : '';
-        tapHint.textContent   = flipped ? '💕 toca' : '💕 toca';
     }
     card.addEventListener('click',    doFlip);
     card.addEventListener('touchend', (e) => { e.preventDefault(); doFlip(e); }, { passive: false });
@@ -1232,13 +1218,10 @@ function animateHeartPhotosSequence() {
         const popScale  = isMobile ? 3   : 4.5;   // pop inicial
         const zoomScale = isMobile ? 5.5 : 7.5;   // zoom cinematográfico (mucho más grande)
 
-        // ── Fase 1: POP rápido ───────────────────────────────────────────
         photo.style.transition    = 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
         photo.style.zIndex        = '5000';
         photo.style.transform     = `translate(-50%, -50%) scale(${popScale})`;
         photo.style.pointerEvents = 'auto';
-        const hint = photo.querySelector('.photo-tap-hint');
-        if (hint) hint.style.display = 'block';
 
         // ── Fase 2: ZOOM CINEMATOGRÁFICO (como si la cámara se acercara) ─
         setTimeout(() => {
@@ -1441,36 +1424,43 @@ function drawDotMatrix(canvas, text) {
 }
 
 function runBirthdayCounter() {
+    // Ocultar el canvas dot-matrix (ya no lo usamos)
     const counterEl = document.getElementById('birthdayCounter');
-    const canvas    = document.getElementById('counterCanvas');
-    if (!counterEl || !canvas) { spawnHeartPhotosCentered(); return; }
+    if (counterEl) counterEl.style.display = 'none';
 
-    const target     = 22;
-    let   current    = 1;
-    const intervalMs = 320;
+    // Asegurar que el canvas de partículas S sea visible y al frente
+    const sCanvas = document.querySelector('.canvas');
+    if (sCanvas) {
+        sCanvas.style.display = 'block';
+        sCanvas.style.zIndex = '10000';
+    }
 
-    counterEl.style.display  = 'block';
-    counterEl.style.opacity  = '1';
-    counterEl.style.transition = '';
-    drawDotMatrix(canvas, String(current));
+    const target = 22;
+    let current = 1;
+    const intervalMs = 550; // tiempo entre cada número
+
+    // Mostrar el primer número inmediatamente
+    if (typeof S !== 'undefined' && S.Shape && S.ShapeBuilder) {
+        S.Shape.switchShape(S.ShapeBuilder.letter(String(current)));
+    }
 
     const ticker = setInterval(() => {
         current++;
-        drawDotMatrix(canvas, String(current));
+        if (typeof S !== 'undefined' && S.Shape && S.ShapeBuilder) {
+            S.Shape.switchShape(S.ShapeBuilder.letter(String(current)));
+        }
 
         if (current >= target) {
             clearInterval(ticker);
             explode22();
             setTimeout(() => {
-                counterEl.style.transition = 'opacity 0.6s ease';
-                counterEl.style.opacity    = '0';
-                setTimeout(() => {
-                    counterEl.style.display = 'none';
-                    counterEl.style.opacity  = '1';
-                    counterEl.style.transition = '';
-                    spawnHeartPhotosCentered();
-                }, 650);
-            }, 850);
+                // Ocultar canvas S y pasar a las fotos del corazón
+                if (sCanvas) {
+                    sCanvas.style.zIndex = '';
+                    sCanvas.style.display = 'none';
+                }
+                spawnHeartPhotosCentered();
+            }, 1100);
         }
     }, intervalMs);
 }
@@ -2119,20 +2109,31 @@ function drawDotMatrixMultiLine(canvas, lines) {
     });
 }
 
-// ===== FIRMA DE AMOR FINAL (dot-matrix canvas) =====
+// ===== FIRMA DE AMOR FINAL (misma partícula S.Shape que HAPPY BIRTHDAY) =====
 function showLoveSignature() {
     const old = document.getElementById('loveSignatureCanvas');
     if (old) old.remove();
 
-    const canvas = document.createElement('canvas');
-    canvas.id = 'loveSignatureCanvas';
-    canvas.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99996;pointer-events:none;opacity:0;transition:opacity 1.2s ease;';
-    document.body.appendChild(canvas);
+    // Mostrar el canvas S de partículas otra vez
+    const sCanvas = document.querySelector('.canvas');
+    if (sCanvas) {
+        sCanvas.style.display = 'block';
+        sCanvas.style.zIndex  = '99996';
+    }
 
-    drawDotMatrixMultiLine(canvas, ['CON TODO', 'MI AMOR', '\u2764']);
+    // Mostrar CON → TODO → MI → AMOR → ❤ word by word, igual que HAPPY|BIRTHDAY|TO|PINKY|❤
+    const words  = ['CON', 'TODO', 'MI', 'AMOR', '\u2764'];
+    const delay  = 2200; // misma cadencia que la secuencia del inicio
+    let idx = 0;
 
-    requestAnimationFrame(() => {
-        void canvas.offsetWidth;
-        canvas.style.opacity = '1';
-    });
+    function nextWord() {
+        if (idx >= words.length) return;
+        if (typeof S !== 'undefined' && S.Shape && S.ShapeBuilder) {
+            S.Shape.switchShape(S.ShapeBuilder.letter(words[idx]));
+        }
+        idx++;
+        if (idx < words.length) setTimeout(nextWord, delay);
+    }
+
+    nextWord();
 }

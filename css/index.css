@@ -1641,55 +1641,6 @@
       font-weight: 600;
   }
 
-  /* ===== CONTADOR ANIMADO 1→22 ===== */
-  .birthday-counter {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 99990;
-      text-align: center;
-      pointer-events: none;
-  }
-
-  .counter-number {
-      /* Misma fuente, tamaño y estilo que "HAPPY BIRTHDAY" al inicio */
-      font-family: 'Dancing Script', 'Brush Script MT', 'Lucida Handwriting', cursive;
-      font-size: clamp(38px, 14vw, 72px);
-      font-weight: 500;
-      color: #ffffff;
-      line-height: 1.35;
-      letter-spacing: 0.02em;
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
-      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 0, 0, 0.35);
-      animation: counterPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
-  }
-
-
-  .counter-label {
-      font-family: 'Dancing Script', cursive;
-      font-size: clamp(18px, 4vw, 28px);
-      color: #ffd6e8;
-      margin-top: -10px;
-      text-shadow: 0 0 12px rgba(255, 105, 180, 0.9);
-      opacity: 0.9;
-  }
-
-  @keyframes counterPop {
-      0%   { transform: scale(0.3); opacity: 0; }
-      70%  { transform: scale(1.15); opacity: 1; }
-      100% { transform: scale(1); opacity: 1; }
-  }
-
-  @keyframes counterFadeOut {
-      0%   { transform: scale(1); opacity: 1; }
-      100% { transform: scale(2); opacity: 0; }
-  }
-
-  .counter-number.fade-out {
-      animation: counterFadeOut 0.5s ease forwards;
-  }
 
   /* ===== PARTÍCULAS AL TOCAR PANTALLA ===== */
   .touch-particle {
@@ -1706,7 +1657,7 @@
       100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; }
   }
 
-  /* ===== PARTÍCULAS EXPLOSIÓN DEL 22 ===== */
+  /* ===== PARTÍCULAS EXPLOSIÓN ===== */
   .explosion-particle {
       position: fixed;
       pointer-events: none;
@@ -1721,38 +1672,6 @@
       100% { transform: translate(var(--dx), var(--dy)) scale(0.1); opacity: 0; }
   }
 
-  /* ===== FIRMA DE AMOR FINAL ===== */
-  .love-signature {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 99996;
-      /* Misma fuente, peso, tamaño y sombra que "HAPPY BIRTHDAY" */
-      font-family: 'Dancing Script', 'Brush Script MT', 'Lucida Handwriting', cursive;
-      font-size: clamp(38px, 14vw, 72px);
-      font-weight: 500;
-      color: #ffffff;
-      white-space: nowrap;
-      text-align: center;
-      letter-spacing: 0.02em;
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
-      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 0, 0, 0.35);
-      clip-path: inset(0 100% 0 0);
-      animation: writeSignature 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-      pointer-events: none;
-  }
-
-  @keyframes writeSignature {
-      0%   { clip-path: inset(0 100% 0 0); opacity: 0; }
-      5%   { opacity: 1; }
-      100% { clip-path: inset(0 0% 0 0); opacity: 1; }
-  }
-
-  @media screen and (max-width: 480px) {
-      .love-signature { bottom: 30px; }
-  }
 
   /* ===== LLUVIA DE EMOJIS FINAL ===== */
   .finale-emoji {
