@@ -1082,49 +1082,104 @@ function preloadPhoto(url) {
     return img;
 }
 
+// Mensajes románticos para cada foto (rotarán si hay más fotos que mensajes)
+const photoFlipMessages = [
+    'Eres mi mayor alegría 💕',
+    'Te amo más cada día ❤️',
+    'Gracias por existir 🌹',
+    'Mi vida contigo es perfecta 💖',
+    'Eres mi sueño hecho realidad ✨',
+    'Para siempre contigo 💗',
+    'Mi amor eterno 💓',
+    'Feliz cumpleaños mi amor 🎂',
+    'Me haces tan feliz 🥰',
+];
+
 function createHeartPhotoCentered(idx, total) {
     if (heartPhotosCreated >= maxHeartPhotos) return;
 
     const photoUrl = photoUrls[idx % photoUrls.length];
-    const cachedImg = preloadPhoto(photoUrl);
+    preloadPhoto(photoUrl);
 
-    const photo = document.createElement('img');
-    photo.src = photoUrl;
-    photo.className = 'photo';
-    photo.style.zIndex = '300';
+    // Obtener mensaje: primero del settings, si no del array por defecto
+    const currentSettings = window.settings || settings;
+    const pagesArr = currentSettings.pages || [];
+    const pageMsg  = pagesArr[idx % pagesArr.length]?.content || '';
+    const message  = pageMsg || photoFlipMessages[idx % photoFlipMessages.length];
 
-    // Tối ưu hóa vị trí tính toán
+    // ── Estructura de la tarjeta ──────────────────────────────────────────
+    const card = document.createElement('div');
+    card.className = 'photo';           // mantiene la clase para querySelectorAll
+    card.style.zIndex = '300';
+    card.style.cursor = 'pointer';
+    card.style.pointerEvents = 'none'; // se activa después del reveal
+
+    // Inner (contenedor de flip 3D)
+    const inner = document.createElement('div');
+    inner.className = 'photo-card-inner';
+
+    // Frente — la foto
+    const front = document.createElement('div');
+    front.className = 'photo-card-front';
+    const img = document.createElement('img');
+    img.src = photoUrl;
+    img.draggable = false;
+    const tapHint = document.createElement('div');
+    tapHint.className = 'photo-tap-hint';
+    tapHint.textContent = '💕 toca';
+    tapHint.style.display = 'none'; // aparece al revelar
+    front.appendChild(img);
+    front.appendChild(tapHint);
+
+    // Reverso — el mensaje
+    const back = document.createElement('div');
+    back.className = 'photo-card-back';
+    const msgEl = document.createElement('p');
+    msgEl.className = 'photo-message';
+    msgEl.textContent = message;
+    back.appendChild(msgEl);
+
+    inner.appendChild(front);
+    inner.appendChild(back);
+    card.appendChild(inner);
+
+    // ── Posición en el corazón ────────────────────────────────────────────
     const centerX = window.innerWidth * 0.5;
     const centerY = window.innerHeight * 0.5;
     const t = (idx / total) * 2 * Math.PI;
-
-    // Tối ưu hóa scale calculation
     const isLandscapeMobile = window.innerHeight <= 500 && window.innerWidth > window.innerHeight;
     const scale = isLandscapeMobile ? 8 : 16;
-
-    // Tính toán vị trí heart shape
     const sin_t = Math.sin(t);
     const cos_t = Math.cos(t);
     const targetX = scale * 16 * Math.pow(sin_t, 3);
     const targetY = -scale * (13 * cos_t - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
 
-    // Set initial position
-    photo.style.left = centerX + 'px';
-    photo.style.top = centerY + 'px';
-    photo.style.opacity = '0';
-    photo.style.transform = 'translate(-50%, -50%) scale(0)';
-    photo.style.transition = 'all 1.5s ease-out'; // Giảm thời gian transition
+    card.style.left      = centerX + 'px';
+    card.style.top       = centerY + 'px';
+    card.style.opacity   = '0';
+    card.style.transform = 'translate(-50%, -50%) scale(0)';
+    card.style.transition = 'all 1.5s ease-out';
 
-    document.body.appendChild(photo);
+    document.body.appendChild(card);
     heartPhotosCreated++;
 
-    // Sử dụng requestAnimationFrame cho smooth animation
     requestAnimationFrame(() => {
-        photo.style.opacity = '1';
-        photo.style.transform = 'translate(-50%, -50%) scale(1)';
-        photo.style.left = (centerX + targetX) + 'px';
-        photo.style.top = (centerY + targetY) + 'px';
+        card.style.opacity   = '1';
+        card.style.transform = 'translate(-50%, -50%) scale(1)';
+        card.style.left = (centerX + targetX) + 'px';
+        card.style.top  = (centerY + targetY) + 'px';
     });
+
+    // ── Flip al tocar ─────────────────────────────────────────────────────
+    let flipped = false;
+    function doFlip(e) {
+        e.stopPropagation();
+        flipped = !flipped;
+        inner.style.transform = flipped ? 'rotateY(180deg)' : '';
+        tapHint.textContent   = flipped ? '💕 toca' : '💕 toca';
+    }
+    card.addEventListener('click',    doFlip);
+    card.addEventListener('touchend', (e) => { e.preventDefault(); doFlip(e); }, { passive: false });
 }
 
 function spawnHeartPhotosCentered() {
@@ -1155,16 +1210,48 @@ function spawnHeartPhotosCentered() {
 
 let heartSequenceTimeout = null;
 
-// Fotos se revelan una por una: se agrandan y vuelan a posición aleatoria en pantalla
+// Genera posiciones en cuadrícula para que ninguna foto se encime
+function getGridPositions(count) {
+    const isMobile = window.innerWidth < 768;
+    const pw = isMobile ? 80 : 120;
+    const ph = isMobile ? 80 : 120;
+    const W  = window.innerWidth;
+    const H  = window.innerHeight;
+    const margin = isMobile ? 15 : 25;
+
+    const cols = Math.max(2, Math.ceil(Math.sqrt(count * (W / H))));
+    const rows = Math.ceil(count / cols);
+    const cellW = (W - margin * 2) / cols;
+    const cellH = (H - margin * 2) / rows;
+
+    const positions = [];
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const maxOffX = Math.max(0, (cellW - pw) / 2);
+            const maxOffY = Math.max(0, (cellH - ph) / 2);
+            const cx = margin + c * cellW + cellW / 2 + (Math.random() - 0.5) * maxOffX * 1.5;
+            const cy = margin + r * cellH + cellH / 2 + (Math.random() - 0.5) * maxOffY * 1.5;
+            positions.push({ x: cx, y: cy });
+        }
+    }
+    // Barajar
+    for (let i = positions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+    return positions.slice(0, count);
+}
+
+// Fotos se revelan una por una y vuelan a su zona preasignada (sin solapamiento)
 function animateHeartPhotosSequence() {
     const photos = Array.from(document.querySelectorAll('.photo'));
     if (photos.length === 0) return;
 
+    const positions = getGridPositions(photos.length);
     let index = 0;
 
     function revealNext() {
         if (index >= photos.length) {
-            // Todas las fotos reveladas — mostrar firma de amor
             setTimeout(showLoveSignature, 1200);
             return;
         }
@@ -1180,26 +1267,28 @@ function animateHeartPhotosSequence() {
         photo.style.zIndex = '5000';
         photo.style.transform = `translate(-50%, -50%) scale(${bigScale})`;
 
-        // Fase 2: volar a un lugar aleatorio en pantalla
+        // Fase 2: volar a celda preasignada sin solapamiento
         setTimeout(() => {
             if (!document.body.contains(photo)) return;
-
-            const margin  = 80;
-            const pw      = isMobile ? 80 : 120; // tamaño real de la foto
-            const ph      = isMobile ? 80 : 120;
-            const randX   = margin + Math.random() * (window.innerWidth  - pw  - margin * 2);
-            const randY   = margin + Math.random() * (window.innerHeight - ph  - margin * 2);
-
-            photo.style.transition = 'all 0.7s ease-out';
-            // Moverse a posición absoluta sin translate
-            photo.style.transform  = 'scale(1)';
-            photo.style.left       = randX + 'px';
-            photo.style.top        = randY  + 'px';
+            const pos = positions[index - 1] || positions[0];
+            photo.style.transition = 'all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            photo.style.transform  = 'translate(-50%, -50%) scale(1)';
+            photo.style.left       = pos.x + 'px';
+            photo.style.top        = pos.y + 'px';
             photo.style.zIndex     = '400';
+
+            // Activar interacción y mostrar hint después de que aterrice
+            setTimeout(() => {
+                if (!document.body.contains(photo)) return;
+                photo.style.pointerEvents = 'auto';
+                const hint = photo.querySelector('.photo-tap-hint');
+                if (hint) hint.style.display = 'block';
+            }, 850);
         }, 600);
 
         index++;
-        heartSequenceTimeout = setTimeout(revealNext, 1200); // siguiente foto
+        heartSequenceTimeout = setTimeout(revealNext, 1200);
+
     }
 
     revealNext();
