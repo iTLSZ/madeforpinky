@@ -1155,53 +1155,54 @@ function spawnHeartPhotosCentered() {
 
 let heartSequenceTimeout = null;
 
-// Nueva función para mostrar/sobresalir las fotos una por una en orden
+// Fotos se revelan una por una: se agrandan y vuelan a posición aleatoria en pantalla
 function animateHeartPhotosSequence() {
-    const photos = document.querySelectorAll('.photo');
+    const photos = Array.from(document.querySelectorAll('.photo'));
     if (photos.length === 0) return;
-    
-    let index = 0;
-    function popNext() {
-        // Verificar si las fotos siguen en el DOM tras un supuesto reinicio
-        if (photos.length > 0 && !document.body.contains(photos[0])) {
-            return;
-        }
-        
-        // Reiniciar la secuencia si ya se mostraron todas
-        if (index >= photos.length) {
-            index = 0;
-            heartSequenceTimeout = setTimeout(popNext, 3000); // Esperar 3 segundos antes de repetir todo el ciclo
-            return;
-        }
-        
-        const photo = photos[index];
-        photo.style.transition = 'all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        photo.style.zIndex = '1000';
-        
-        const isMobile = window.innerWidth < 768;
-        const targetScale = isMobile ? 3 : 4.5; 
-        
-        photo.style.transform = `translate(-50%, -50%) scale(${targetScale})`;
-        
-        setTimeout(() => {
-            if (document.body.contains(photo)) {
-                photo.style.transition = 'all 0.5s ease-out';
-                photo.style.transform = 'translate(-50%, -50%) scale(1)';
-                setTimeout(() => {
-                    if (document.body.contains(photo)) {
-                        photo.style.zIndex = '300';
-                    }
-                }, 500);
-            }
-        }, 1500); // Se queda grande por 1.5 segundos
-        
-        index++;
-        heartSequenceTimeout = setTimeout(popNext, 1800); // Llama a la siguiente foto después de 1.8 seg
-    }
-    
-    popNext();
-}
 
+    let index = 0;
+
+    function revealNext() {
+        if (index >= photos.length) {
+            // Termina la secuencia — no se repite
+            return;
+        }
+
+        const photo = photos[index];
+        if (!document.body.contains(photo)) { index++; revealNext(); return; }
+
+        const isMobile = window.innerWidth < 768;
+        const bigScale = isMobile ? 3 : 4;
+
+        // Fase 1: agrandarse en su posición del corazón
+        photo.style.transition = 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        photo.style.zIndex = '5000';
+        photo.style.transform = `translate(-50%, -50%) scale(${bigScale})`;
+
+        // Fase 2: volar a un lugar aleatorio en pantalla
+        setTimeout(() => {
+            if (!document.body.contains(photo)) return;
+
+            const margin  = 80;
+            const pw      = isMobile ? 80 : 120; // tamaño real de la foto
+            const ph      = isMobile ? 80 : 120;
+            const randX   = margin + Math.random() * (window.innerWidth  - pw  - margin * 2);
+            const randY   = margin + Math.random() * (window.innerHeight - ph  - margin * 2);
+
+            photo.style.transition = 'all 0.7s ease-out';
+            // Moverse a posición absoluta sin translate
+            photo.style.transform  = 'scale(1)';
+            photo.style.left       = randX + 'px';
+            photo.style.top        = randY  + 'px';
+            photo.style.zIndex     = '400';
+        }, 600);
+
+        index++;
+        heartSequenceTimeout = setTimeout(revealNext, 1200); // siguiente foto
+    }
+
+    revealNext();
+}
 
 
 // 7. Tối ưu hóa startHeartEffect
@@ -1213,38 +1214,64 @@ function startHeartEffect() {
 
     disintegrateFloatingHearts();
 
-    // Batch DOM updates
+    // Ocultar libro y contenido
     const book = document.getElementById('book');
     const bookContainer = document.querySelector('.book-container');
     const contentDisplay = document.getElementById('contentDisplay');
 
-    // Hide elements efficiently
-    if (book) {
-        book.style.display = 'none';
-        book.classList.remove('show');
-    }
-    if (bookContainer) {
-        bookContainer.style.display = 'none';
-        bookContainer.classList.remove('show');
-    }
-    if (contentDisplay) {
-        contentDisplay.classList.remove('show');
-    }
+    if (book) { book.style.display = 'none'; book.classList.remove('show'); }
+    if (bookContainer) { bookContainer.style.display = 'none'; bookContainer.classList.remove('show'); }
+    if (contentDisplay) { contentDisplay.classList.remove('show'); }
 
-    // Stagger effects để tránh blocking
+    // Confetti y fuegos artificiales al inicio
     requestAnimationFrame(() => {
-        setTimeout(() => {
-            showConfetti();
-        }, 100);
-
-        setTimeout(() => {
-            showFirework();
-        }, 200);
-
-        setTimeout(() => {
-            spawnHeartPhotosCentered();
-        }, 300);
+        setTimeout(() => showConfetti(), 100);
+        setTimeout(() => showFirework(), 200);
     });
+
+    // Mostrar el contador 1→22 y luego las fotos
+    setTimeout(() => runBirthdayCounter(), 400);
+}
+
+function runBirthdayCounter() {
+    const counterEl  = document.getElementById('birthdayCounter');
+    const numberEl   = document.getElementById('counterNumber');
+    if (!counterEl || !numberEl) {
+        spawnHeartPhotosCentered();
+        return;
+    }
+
+    const target = 22;
+    let current  = 1;
+    const intervalMs = 350; // tiempo entre números
+
+    counterEl.style.display = 'block';
+    numberEl.textContent = current;
+    // Forzar re-animación quitando y poniendo la clase
+    void numberEl.offsetWidth;
+
+    const ticker = setInterval(() => {
+        current++;
+        numberEl.classList.remove('pop');
+        void numberEl.offsetWidth; // forzar reflow para reiniciar anim
+        numberEl.style.animation = 'none';
+        void numberEl.offsetWidth;
+        numberEl.style.animation = '';
+        numberEl.textContent = current;
+
+        if (current >= target) {
+            clearInterval(ticker);
+            // Pequeña pausa en el 22, luego fadeout y mostrar fotos
+            setTimeout(() => {
+                numberEl.classList.add('fade-out');
+                setTimeout(() => {
+                    counterEl.style.display = 'none';
+                    numberEl.classList.remove('fade-out');
+                    spawnHeartPhotosCentered();
+                }, 600);
+            }, 800);
+        }
+    }, intervalMs);
 }
 
 function checkBookFinished() {
@@ -1765,3 +1792,5 @@ window.debugBookImages = function () {
         const imageUrl = img.getAttribute('data-image-url');
     });
 };
+
+
