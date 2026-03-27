@@ -1549,7 +1549,7 @@ musicControl.addEventListener('click', toggleMusic);
 window.startBirthdayMusic = function () {
     if (!birthdayAudio) return;
     if (isPlaying) return;
-    birthdayAudio.currentTime = 60; // empezar desde min 1:00
+    // birthdayAudio.currentTime = 60; // Quitado para que empiece desde el inicio (segundo 0)
     birthdayAudio.play().then(() => {
         isPlaying = true;
         if (musicControl) {
@@ -1557,8 +1557,15 @@ window.startBirthdayMusic = function () {
             musicControl.classList.add('playing');
             musicControl.title = 'Pause Music';
         }
-    }).catch(() => {});
+    }).catch(() => {
+        // El navegador a veces bloquea el auto-play. Empezará en el primer "toque" o "click".
+    });
 };
+
+// Intentar reproducir en cuanto cargue
+document.addEventListener("DOMContentLoaded", () => {
+    window.startBirthdayMusic();
+});
 
 // Iniciar música en el primer toque o clic (los navegadores bloquean sonido hasta entonces)
 function startMusicOnFirstInteraction() {
