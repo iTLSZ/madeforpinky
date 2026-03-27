@@ -1356,47 +1356,125 @@ function startHeartEffect() {
     setTimeout(() => runBirthdayCounter(), 400);
 }
 
+// ===== DOT-MATRIX RENDERER (estilo LED rosa) =====
+const DOT_DIGITS = {
+    // Dígitos
+    '0':[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,1,1],[1,0,1,0,1],[1,1,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+    '1':[[0,0,1,0,0],[0,1,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,1,1,1,0]],
+    '2':[[0,1,1,1,0],[1,0,0,0,1],[0,0,0,0,1],[0,0,1,1,0],[0,1,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],
+    '3':[[1,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[0,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,0]],
+    '4':[[0,0,0,1,0],[0,0,1,1,0],[0,1,0,1,0],[1,0,0,1,0],[1,1,1,1,1],[0,0,0,1,0],[0,0,0,1,0]],
+    '5':[[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,0]],
+    '6':[[0,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+    '7':[[1,1,1,1,1],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,0,0,0]],
+    '8':[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+    '9':[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,1],[0,0,0,0,1],[0,0,0,0,1],[0,1,1,1,0]],
+    // Letras
+    'C':[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,1],[0,1,1,1,0]],
+    'O':[[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+    'N':[[1,0,0,0,1],[1,1,0,0,1],[1,0,1,0,1],[1,0,0,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+    'T':[[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
+    'D':[[1,1,1,0,0],[1,0,0,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,1,0],[1,1,1,0,0]],
+    'M':[[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+    'I':[[0,1,1,1,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,1,1,1,0]],
+    'A':[[0,0,1,0,0],[0,1,0,1,0],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+    'R':[[1,1,1,0,0],[1,0,0,1,0],[1,0,0,0,1],[1,1,1,0,0],[1,0,1,0,0],[1,0,0,1,0],[1,0,0,0,1]],
+    '\u2764':[[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1],[0,1,1,1,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+    ' ': null, // espacio — tratado especialmente en el renderer
+};
+
+function drawDotMatrix(canvas, text) {
+    const isMobile = window.innerWidth < 600;
+    const r   = isMobile ? 5  : 9;   // radio de cada punto
+    const gap = isMobile ? 14 : 24;  // separación entre centros de puntos
+    const digitGap = isMobile ? 10 : 18; // espacio extra entre dígitos
+
+    const ROWS = 7;
+    const COLS = 5;
+    const chars = text.split('').filter(c => DOT_DIGITS[c]);
+    const totalW = chars.length * (COLS * gap) + (chars.length - 1) * digitGap;
+    const totalH = ROWS * gap;
+
+    canvas.width  = totalW;
+    canvas.height = totalH;
+    canvas.style.display = 'block';
+
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, totalW, totalH);
+
+    let offsetX = 0;
+    chars.forEach((ch, ci) => {
+        if (ci > 0) offsetX += digitGap;
+        const pattern = DOT_DIGITS[ch];
+        for (let row = 0; row < ROWS; row++) {
+            for (let col = 0; col < COLS; col++) {
+                const cx = offsetX + col * gap + gap / 2;
+                const cy = row * gap + gap / 2;
+                if (pattern[row][col]) {
+                    // Halo rosado exterior
+                    const grd = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r * 1.8);
+                    grd.addColorStop(0, 'rgba(255,20,147,0.9)');
+                    grd.addColorStop(1, 'rgba(255,20,147,0)');
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r * 1.8, 0, Math.PI * 2);
+                    ctx.fillStyle = grd;
+                    ctx.fill();
+                    // Punto rosa sólido
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    ctx.fillStyle = '#FF1493';
+                    ctx.shadowColor = '#FF69B4';
+                    ctx.shadowBlur  = 12;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                } else {
+                    // Punto apagado muy tenue
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r * 0.35, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255,20,147,0.12)';
+                    ctx.fill();
+                }
+            }
+        }
+        offsetX += COLS * gap;
+    });
+}
+
 function runBirthdayCounter() {
-    const counterEl  = document.getElementById('birthdayCounter');
-    const numberEl   = document.getElementById('counterNumber');
-    if (!counterEl || !numberEl) {
-        spawnHeartPhotosCentered();
-        return;
-    }
+    const counterEl = document.getElementById('birthdayCounter');
+    const canvas    = document.getElementById('counterCanvas');
+    if (!counterEl || !canvas) { spawnHeartPhotosCentered(); return; }
 
-    const target = 22;
-    let current  = 1;
-    const intervalMs = 350; // tiempo entre números
+    const target     = 22;
+    let   current    = 1;
+    const intervalMs = 320;
 
-    counterEl.style.display = 'block';
-    numberEl.textContent = current;
-    // Forzar re-animación quitando y poniendo la clase
-    void numberEl.offsetWidth;
+    counterEl.style.display  = 'block';
+    counterEl.style.opacity  = '1';
+    counterEl.style.transition = '';
+    drawDotMatrix(canvas, String(current));
 
     const ticker = setInterval(() => {
         current++;
-        numberEl.classList.remove('pop');
-        void numberEl.offsetWidth; // forzar reflow para reiniciar anim
-        numberEl.style.animation = 'none';
-        void numberEl.offsetWidth;
-        numberEl.style.animation = '';
-        numberEl.textContent = current;
+        drawDotMatrix(canvas, String(current));
 
         if (current >= target) {
             clearInterval(ticker);
-            explode22(); // ♥ el 22 explota en partículas
-            // Pequeña pausa en el 22, luego fadeout y mostrar fotos
+            explode22();
             setTimeout(() => {
-                numberEl.classList.add('fade-out');
+                counterEl.style.transition = 'opacity 0.6s ease';
+                counterEl.style.opacity    = '0';
                 setTimeout(() => {
                     counterEl.style.display = 'none';
-                    numberEl.classList.remove('fade-out');
+                    counterEl.style.opacity  = '1';
+                    counterEl.style.transition = '';
                     spawnHeartPhotosCentered();
-                }, 600);
-            }, 800);
+                }, 650);
+            }, 850);
         }
     }, intervalMs);
 }
+
 
 function checkBookFinished() {
     const totalPhysicalPages = Math.ceil(pages.length / 2);
@@ -1976,14 +2054,85 @@ document.addEventListener('touchstart', (e) => {
     createTouchParticles(t.clientX, t.clientY);
 }, { passive: true });
 
-// ===== FIRMA DE AMOR FINAL =====
-function showLoveSignature() {
-    const sig = document.getElementById('loveSignature');
-    if (!sig) return;
-    sig.style.display = 'block';
-    // Reiniciar animación por si se llama más de una vez
-    sig.style.animation = 'none';
-    void sig.offsetWidth;
-    sig.style.animation = '';
+// Renderiza líneas de texto dot-matrix centradas en un canvas
+function drawDotMatrixMultiLine(canvas, lines) {
+    const isMobile = window.innerWidth < 600;
+    const r    = isMobile ? 3  : 6;
+    const gap  = isMobile ? 9  : 17;
+    const dGap = isMobile ? 5  : 9;
+    const lGap = isMobile ? 18 : 32;
+    const ROWS = 7; const COLS = 5; const SPACE_COLS = 3;
+
+    function lineWidth(line) {
+        return line.split('').reduce((acc, ch, ci) => {
+            const cols = ch === ' ' ? SPACE_COLS : COLS;
+            return acc + cols * gap + (ci > 0 ? dGap : 0);
+        }, 0);
+    }
+
+    const maxW   = Math.max(...lines.map(lineWidth));
+    const totalH = lines.length * ROWS * gap + (lines.length - 1) * lGap;
+    canvas.width  = maxW;
+    canvas.height = totalH;
+    canvas.style.width  = maxW  + 'px';
+    canvas.style.height = totalH + 'px';
+
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, maxW, totalH);
+
+    let oY = 0;
+    lines.forEach(line => {
+        const lw = lineWidth(line);
+        let oX = (maxW - lw) / 2;
+        line.split('').forEach((ch, ci) => {
+            if (ci > 0) oX += dGap;
+            const isSpace  = ch === ' ';
+            const charCols = isSpace ? SPACE_COLS : COLS;
+            if (!isSpace) {
+                const pattern = DOT_DIGITS[ch];
+                if (pattern) {
+                    for (let row = 0; row < ROWS; row++) {
+                        for (let col = 0; col < COLS; col++) {
+                            const cx = oX + col * gap + gap / 2;
+                            const cy = oY + row * gap + gap / 2;
+                            if (pattern[row]?.[col]) {
+                                const grd = ctx.createRadialGradient(cx,cy,r*0.3,cx,cy,r*1.8);
+                                grd.addColorStop(0,'rgba(255,20,147,0.9)');
+                                grd.addColorStop(1,'rgba(255,20,147,0)');
+                                ctx.beginPath(); ctx.arc(cx,cy,r*1.8,0,Math.PI*2);
+                                ctx.fillStyle = grd; ctx.fill();
+                                ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+                                ctx.fillStyle = '#FF1493';
+                                ctx.shadowColor = '#FF69B4'; ctx.shadowBlur = 10;
+                                ctx.fill(); ctx.shadowBlur = 0;
+                            } else {
+                                ctx.beginPath(); ctx.arc(cx,cy,r*0.3,0,Math.PI*2);
+                                ctx.fillStyle = 'rgba(255,20,147,0.1)'; ctx.fill();
+                            }
+                        }
+                    }
+                }
+            }
+            oX += charCols * gap;
+        });
+        oY += ROWS * gap + lGap;
+    });
 }
 
+// ===== FIRMA DE AMOR FINAL (dot-matrix canvas) =====
+function showLoveSignature() {
+    const old = document.getElementById('loveSignatureCanvas');
+    if (old) old.remove();
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'loveSignatureCanvas';
+    canvas.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99996;pointer-events:none;opacity:0;transition:opacity 1.2s ease;';
+    document.body.appendChild(canvas);
+
+    drawDotMatrixMultiLine(canvas, ['CON TODO', 'MI AMOR', '\u2764']);
+
+    requestAnimationFrame(() => {
+        void canvas.offsetWidth;
+        canvas.style.opacity = '1';
+    });
+}

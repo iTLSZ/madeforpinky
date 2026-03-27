@@ -1653,12 +1653,12 @@
   }
 
   .counter-number {
-      /* Misma fuente que "HAPPY BIRTHDAY" al inicio */
+      /* Misma fuente, tamaño y estilo que "HAPPY BIRTHDAY" al inicio */
       font-family: 'Dancing Script', 'Brush Script MT', 'Lucida Handwriting', cursive;
-      font-size: clamp(110px, 28vw, 210px);
+      font-size: clamp(38px, 14vw, 72px);
       font-weight: 500;
       color: #ffffff;
-      line-height: 1;
+      line-height: 1.35;
       letter-spacing: 0.02em;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
