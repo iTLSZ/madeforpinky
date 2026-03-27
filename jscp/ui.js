@@ -1164,7 +1164,8 @@ function animateHeartPhotosSequence() {
 
     function revealNext() {
         if (index >= photos.length) {
-            // Termina la secuencia — no se repite
+            // Todas las fotos reveladas — mostrar firma de amor
+            setTimeout(showLoveSignature, 1200);
             return;
         }
 
@@ -1261,6 +1262,7 @@ function runBirthdayCounter() {
 
         if (current >= target) {
             clearInterval(ticker);
+            explode22(); // ♥ el 22 explota en partículas
             // Pequeña pausa en el 22, luego fadeout y mostrar fotos
             setTimeout(() => {
                 numberEl.classList.add('fade-out');
@@ -1793,4 +1795,73 @@ window.debugBookImages = function () {
     });
 };
 
+// ===== EXPLOSIÓN DE PARTÍCULAS AL LLEGAR AL 22 =====
+function explode22() {
+    const colors = ['#ff69b4','#ff1493','#ffffff','#ffb6c1','#ffd700','#ff85c2','#ff3399'];
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const count = 80;
+
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'explosion-particle';
+        const angle    = (i / count) * 2 * Math.PI + Math.random() * 0.3;
+        const distance = 80 + Math.random() * 280;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance;
+        const size = 4 + Math.random() * 12;
+        p.style.cssText = `
+            left: ${cx}px;
+            top: ${cy}px;
+            width: ${size}px;
+            height: ${size}px;
+            background: ${colors[Math.floor(Math.random() * colors.length)]};
+            animation-delay: ${Math.random() * 0.15}s;
+        `;
+        p.style.setProperty('--dx', dx + 'px');
+        p.style.setProperty('--dy', dy + 'px');
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 1100);
+    }
+}
+
+// ===== FUENTE DE PARTÍCULAS AL TOCAR LA PANTALLA =====
+const touchSymbols = ['💫','✨','💕','❤️','💖','🌟','💗','🌸','💓'];
+
+function createTouchParticles(x, y) {
+    const count = 7;
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'touch-particle';
+        p.textContent = touchSymbols[Math.floor(Math.random() * touchSymbols.length)];
+        const angle    = (i / count) * 2 * Math.PI + Math.random() * 0.6;
+        const distance = 55 + Math.random() * 90;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance - 30; // impulso hacia arriba
+        p.style.cssText = `left:${x}px; top:${y}px; animation-delay:${Math.random() * 0.1}s;`;
+        p.style.setProperty('--dx', dx + 'px');
+        p.style.setProperty('--dy', dy + 'px');
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 1100);
+    }
+}
+
+document.addEventListener('click', (e) => {
+    createTouchParticles(e.clientX, e.clientY);
+});
+document.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    createTouchParticles(t.clientX, t.clientY);
+}, { passive: true });
+
+// ===== FIRMA DE AMOR FINAL =====
+function showLoveSignature() {
+    const sig = document.getElementById('loveSignature');
+    if (!sig) return;
+    sig.style.display = 'block';
+    // Reiniciar animación por si se llama más de una vez
+    sig.style.animation = 'none';
+    void sig.offsetWidth;
+    sig.style.animation = '';
+}
 
