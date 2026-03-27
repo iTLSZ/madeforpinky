@@ -1210,49 +1210,17 @@ function spawnHeartPhotosCentered() {
 
 let heartSequenceTimeout = null;
 
-// Genera posiciones en cuadrícula para que ninguna foto se encime
-function getGridPositions(count) {
-    const isMobile = window.innerWidth < 768;
-    const pw = isMobile ? 80 : 120;
-    const ph = isMobile ? 80 : 120;
-    const W  = window.innerWidth;
-    const H  = window.innerHeight;
-    const margin = isMobile ? 15 : 25;
-
-    const cols = Math.max(2, Math.ceil(Math.sqrt(count * (W / H))));
-    const rows = Math.ceil(count / cols);
-    const cellW = (W - margin * 2) / cols;
-    const cellH = (H - margin * 2) / rows;
-
-    const positions = [];
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            const maxOffX = Math.max(0, (cellW - pw) / 2);
-            const maxOffY = Math.max(0, (cellH - ph) / 2);
-            const cx = margin + c * cellW + cellW / 2 + (Math.random() - 0.5) * maxOffX * 1.5;
-            const cy = margin + r * cellH + cellH / 2 + (Math.random() - 0.5) * maxOffY * 1.5;
-            positions.push({ x: cx, y: cy });
-        }
-    }
-    // Barajar
-    for (let i = positions.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [positions[i], positions[j]] = [positions[j], positions[i]];
-    }
-    return positions.slice(0, count);
-}
-
-// Fotos se revelan una por una y vuelan a su zona preasignada (sin solapamiento)
+// Cada foto se revela, permite volteo y luego EXPLOTA y desaparece
 function animateHeartPhotosSequence() {
     const photos = Array.from(document.querySelectorAll('.photo'));
     if (photos.length === 0) return;
 
-    const positions = getGridPositions(photos.length);
     let index = 0;
 
     function revealNext() {
         if (index >= photos.length) {
-            setTimeout(showLoveSignature, 1200);
+            // Todas explotaron → lluvia de emojis → firma
+            setTimeout(emojiShowerFinale, 400);
             return;
         }
 
@@ -1260,39 +1228,80 @@ function animateHeartPhotosSequence() {
         if (!document.body.contains(photo)) { index++; revealNext(); return; }
 
         const isMobile = window.innerWidth < 768;
-        const bigScale = isMobile ? 3 : 4;
+        const bigScale = isMobile ? 3 : 4.5;
 
-        // Fase 1: agrandarse en su posición del corazón
-        photo.style.transition = 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        // Fase 1: POP — se agranda desde el corazón
+        photo.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
         photo.style.zIndex = '5000';
         photo.style.transform = `translate(-50%, -50%) scale(${bigScale})`;
+        photo.style.pointerEvents = 'auto'; // se puede voltear mientras es grande
+        const hint = photo.querySelector('.photo-tap-hint');
+        if (hint) hint.style.display = 'block';
 
-        // Fase 2: volar a celda preasignada sin solapamiento
+        // Fase 2: EXPLOSIÓN — desaparece con partículas
         setTimeout(() => {
             if (!document.body.contains(photo)) return;
-            const pos = positions[index - 1] || positions[0];
-            photo.style.transition = 'all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-            photo.style.transform  = 'translate(-50%, -50%) scale(1)';
-            photo.style.left       = pos.x + 'px';
-            photo.style.top        = pos.y + 'px';
-            photo.style.zIndex     = '400';
 
-            // Activar interacción y mostrar hint después de que aterrice
-            setTimeout(() => {
-                if (!document.body.contains(photo)) return;
-                photo.style.pointerEvents = 'auto';
-                const hint = photo.querySelector('.photo-tap-hint');
-                if (hint) hint.style.display = 'block';
-            }, 850);
-        }, 600);
+            // posición actual del centro de la foto
+            const rect = photo.getBoundingClientRect();
+            const cx = rect.left + rect.width  / 2;
+            const cy = rect.top  + rect.height / 2;
+            spawnPhotoExplosion(cx, cy);
+
+            // la foto se expande y se desvanece
+            photo.style.transition = 'all 0.35s ease-in';
+            photo.style.transform  = `translate(-50%, -50%) scale(${bigScale * 1.6})`;
+            photo.style.opacity    = '0';
+            setTimeout(() => { if (document.body.contains(photo)) photo.remove(); }, 380);
+        }, 1100);
 
         index++;
-        heartSequenceTimeout = setTimeout(revealNext, 1200);
-
+        heartSequenceTimeout = setTimeout(revealNext, 700);
     }
 
     revealNext();
 }
+
+// Partículas de explosión al desaparecer cada foto
+function spawnPhotoExplosion(cx, cy) {
+    const colors = ['#ff69b4','#ff1493','#ffffff','#ffb6c1','#ffd700','#ff85c2','#ff3399'];
+    for (let i = 0; i < 22; i++) {
+        const p = document.createElement('div');
+        p.className = 'explosion-particle';
+        const angle = (i / 22) * 2 * Math.PI + Math.random() * 0.4;
+        const dist  = 30 + Math.random() * 130;
+        const size  = 4 + Math.random() * 9;
+        p.style.cssText = `left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;background:${colors[i % colors.length]};`;
+        p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+        p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 950);
+    }
+}
+
+// Lluvia masiva de emojis → luego firma final
+function emojiShowerFinale() {
+    const symbols = ['💕','✨','💖','❤️','💗','🌟','💓','🌸','💫','🎂','🥳','🎉','🌹','💝','🎁'];
+    const count   = 70;
+
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+            const e = document.createElement('div');
+            e.className = 'finale-emoji';
+            e.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+            e.style.left            = (2 + Math.random() * 96) + 'vw';
+            e.style.fontSize        = (18 + Math.random() * 32) + 'px';
+            e.style.animationDuration = (1.8 + Math.random() * 2.2) + 's';
+            e.style.animationDelay  = '0s';
+            document.body.appendChild(e);
+            setTimeout(() => e.remove(), 4500);
+        }, Math.random() * 2200);
+    }
+
+    // Después de la lluvia → firma
+    setTimeout(showLoveSignature, 3000);
+}
+
 
 
 // 7. Tối ưu hóa startHeartEffect

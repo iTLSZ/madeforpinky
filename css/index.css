@@ -1748,3 +1748,20 @@
   @media screen and (max-width: 480px) {
       .love-signature { bottom: 30px; }
   }
+
+  /* ===== LLUVIA DE EMOJIS FINAL ===== */
+  .finale-emoji {
+      position: fixed;
+      top: -60px;
+      pointer-events: none;
+      z-index: 99997;
+      line-height: 1;
+      animation: emojiRain linear forwards;
+      will-change: transform, opacity;
+  }
+
+  @keyframes emojiRain {
+      0%   { transform: translateY(0)    rotate(0deg)   scale(1);   opacity: 1; }
+      80%  { opacity: 0.9; }
+      100% { transform: translateY(115vh) rotate(360deg) scale(0.7); opacity: 0; }
+  }
