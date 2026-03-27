@@ -1144,11 +1144,64 @@ function spawnHeartPhotosCentered() {
             setTimeout(() => {
                 requestAnimationFrame(spawnNext);
             }, 80); // Giảm từ 100ms xuống 80ms
+        } else {
+            // Empezar la secuencia de mostrar las fotos luego de formarse el corazón
+            setTimeout(animateHeartPhotosSequence, 2000);
         }
     }
 
     spawnNext();
 }
+
+let heartSequenceTimeout = null;
+
+// Nueva función para mostrar/sobresalir las fotos una por una en orden
+function animateHeartPhotosSequence() {
+    const photos = document.querySelectorAll('.photo');
+    if (photos.length === 0) return;
+    
+    let index = 0;
+    function popNext() {
+        // Verificar si las fotos siguen en el DOM tras un supuesto reinicio
+        if (photos.length > 0 && !document.body.contains(photos[0])) {
+            return;
+        }
+        
+        // Reiniciar la secuencia si ya se mostraron todas
+        if (index >= photos.length) {
+            index = 0;
+            heartSequenceTimeout = setTimeout(popNext, 3000); // Esperar 3 segundos antes de repetir todo el ciclo
+            return;
+        }
+        
+        const photo = photos[index];
+        photo.style.transition = 'all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        photo.style.zIndex = '1000';
+        
+        const isMobile = window.innerWidth < 768;
+        const targetScale = isMobile ? 3 : 4.5; 
+        
+        photo.style.transform = `translate(-50%, -50%) scale(${targetScale})`;
+        
+        setTimeout(() => {
+            if (document.body.contains(photo)) {
+                photo.style.transition = 'all 0.5s ease-out';
+                photo.style.transform = 'translate(-50%, -50%) scale(1)';
+                setTimeout(() => {
+                    if (document.body.contains(photo)) {
+                        photo.style.zIndex = '300';
+                    }
+                }, 500);
+            }
+        }, 1500); // Se queda grande por 1.5 segundos
+        
+        index++;
+        heartSequenceTimeout = setTimeout(popNext, 1800); // Llama a la siguiente foto después de 1.8 seg
+    }
+    
+    popNext();
+}
+
 
 
 // 7. Tối ưu hóa startHeartEffect

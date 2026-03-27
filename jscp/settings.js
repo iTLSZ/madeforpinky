@@ -206,6 +206,9 @@ const colorThemes = {
 
 // Tạo hàm reset chung có thể tái sử dụng
 function resetWebsiteState() {
+    if (typeof heartSequenceTimeout !== 'undefined' && heartSequenceTimeout) {
+        clearTimeout(heartSequenceTimeout);
+    }
 
     // Reset website state
     const book = document.getElementById('book');
