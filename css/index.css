@@ -1653,17 +1653,19 @@
   }
 
   .counter-number {
-      font-family: 'Dancing Script', cursive;
-      font-size: clamp(120px, 30vw, 220px);
-      font-weight: 700;
-      color: #fff;
+      font-family: 'Pacifico', cursive;
+      font-size: clamp(110px, 28vw, 210px);
+      font-weight: 400; /* Pacifico es bold por defecto */
+      color: transparent;
+      background: linear-gradient(135deg, #ff69b4 0%, #fff 40%, #ff1493 70%, #ffb6c1 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
       line-height: 1;
-      text-shadow:
-          0 0 30px rgba(255, 105, 180, 1),
-          0 0 80px rgba(255, 20, 147, 0.8),
-          0 0 140px rgba(255, 105, 180, 0.5);
+      filter: drop-shadow(0 0 20px rgba(255, 105, 180, 1))
+              drop-shadow(0 0 60px rgba(255, 20, 147, 0.8));
       animation: counterPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
   }
+
 
   .counter-label {
       font-family: 'Dancing Script', cursive;
@@ -1722,26 +1724,30 @@
   /* ===== FIRMA DE AMOR FINAL ===== */
   .love-signature {
       position: fixed;
-      bottom: 50px;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
-      z-index: 9997;
+      transform: translate(-50%, -50%);
+      z-index: 99996;
       font-family: 'Dancing Script', cursive;
-      font-size: clamp(26px, 6vw, 50px);
+      font-size: clamp(36px, 9vw, 76px);
+      font-weight: 700;
       color: #fff;
       white-space: nowrap;
+      letter-spacing: 0.06em;
+      text-align: center;
       text-shadow:
-          0 0 20px rgba(255, 105, 180, 1),
-          0 0 50px rgba(255, 20, 147, 0.7),
-          0 0 90px rgba(255, 105, 180, 0.4);
+          0 0 15px rgba(255, 105, 180, 1),
+          0 0 40px rgba(255, 20, 147, 0.9),
+          0 0 80px rgba(255, 105, 180, 0.6),
+          0 0 140px rgba(255, 20, 147, 0.3);
       clip-path: inset(0 100% 0 0);
-      animation: writeSignature 2.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      animation: writeSignature 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
       pointer-events: none;
   }
 
   @keyframes writeSignature {
-      0%   { clip-path: inset(0 100% 0 0); opacity: 0.9; }
-      10%  { opacity: 1; }
+      0%   { clip-path: inset(0 100% 0 0); opacity: 0; }
+      5%   { opacity: 1; }
       100% { clip-path: inset(0 0% 0 0); opacity: 1; }
   }
 

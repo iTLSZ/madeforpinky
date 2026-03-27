@@ -1210,16 +1210,18 @@ function spawnHeartPhotosCentered() {
 
 let heartSequenceTimeout = null;
 
-// Cada foto se revela, permite volteo y luego EXPLOTA y desaparece
+// Cada foto: POP en corazón → vuela al CENTRO → se desintegra en partículas rosas
 function animateHeartPhotosSequence() {
     const photos = Array.from(document.querySelectorAll('.photo'));
     if (photos.length === 0) return;
 
     let index = 0;
+    const cx = window.innerWidth  / 2;
+    const cy = window.innerHeight / 2;
 
     function revealNext() {
         if (index >= photos.length) {
-            // Todas explotaron → lluvia de emojis → firma
+            // Todas desintegradas → lluvia de emojis
             setTimeout(emojiShowerFinale, 400);
             return;
         }
@@ -1230,76 +1232,90 @@ function animateHeartPhotosSequence() {
         const isMobile = window.innerWidth < 768;
         const bigScale = isMobile ? 3 : 4.5;
 
-        // Fase 1: POP — se agranda desde el corazón
-        photo.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        photo.style.zIndex = '5000';
-        photo.style.transform = `translate(-50%, -50%) scale(${bigScale})`;
-        photo.style.pointerEvents = 'auto'; // se puede voltear mientras es grande
+        // Fase 1: POP — agranda en su posición del corazón (se puede voltear aquí)
+        photo.style.transition   = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        photo.style.zIndex       = '5000';
+        photo.style.transform    = `translate(-50%, -50%) scale(${bigScale})`;
+        photo.style.pointerEvents = 'auto';
         const hint = photo.querySelector('.photo-tap-hint');
         if (hint) hint.style.display = 'block';
 
-        // Fase 2: EXPLOSIÓN — desaparece con partículas
+        // Fase 2: VOLAR AL CENTRO
         setTimeout(() => {
             if (!document.body.contains(photo)) return;
+            photo.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+            photo.style.left  = cx + 'px';
+            photo.style.top   = cy + 'px';
+            photo.style.transform = `translate(-50%, -50%) scale(${bigScale})`;
+        }, 900);
 
-            // posición actual del centro de la foto
-            const rect = photo.getBoundingClientRect();
-            const cx = rect.left + rect.width  / 2;
-            const cy = rect.top  + rect.height / 2;
-            spawnPhotoExplosion(cx, cy);
-
-            // la foto se expande y se desvanece
-            photo.style.transition = 'all 0.35s ease-in';
-            photo.style.transform  = `translate(-50%, -50%) scale(${bigScale * 1.6})`;
+        // Fase 3: DESINTEGRARSE en el centro — partículas rosas
+        setTimeout(() => {
+            if (!document.body.contains(photo)) return;
+            spawnPinkDisintegration(cx, cy);
+            photo.style.transition = 'all 0.3s ease-in';
+            photo.style.transform  = 'translate(-50%, -50%) scale(0)';
             photo.style.opacity    = '0';
-            setTimeout(() => { if (document.body.contains(photo)) photo.remove(); }, 380);
-        }, 1100);
+            setTimeout(() => { if (document.body.contains(photo)) photo.remove(); }, 320);
+        }, 1500);
 
         index++;
-        heartSequenceTimeout = setTimeout(revealNext, 700);
+        heartSequenceTimeout = setTimeout(revealNext, 750);
     }
 
     revealNext();
 }
 
-// Partículas de explosión al desaparecer cada foto
-function spawnPhotoExplosion(cx, cy) {
-    const colors = ['#ff69b4','#ff1493','#ffffff','#ffb6c1','#ffd700','#ff85c2','#ff3399'];
-    for (let i = 0; i < 22; i++) {
+// Desintegración en partículas 100% rosas desde el centro
+function spawnPinkDisintegration(cx, cy) {
+    // Paleta de rosas exclusivamente
+    const pinks = ['#ff69b4','#ff1493','#ffb6c1','#ff85c2','#ff3399','#ffc0cb','#db7093','#ff007f'];
+    const count = 35;
+    for (let i = 0; i < count; i++) {
         const p = document.createElement('div');
         p.className = 'explosion-particle';
-        const angle = (i / 22) * 2 * Math.PI + Math.random() * 0.4;
-        const dist  = 30 + Math.random() * 130;
-        const size  = 4 + Math.random() * 9;
-        p.style.cssText = `left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;background:${colors[i % colors.length]};`;
+        const angle = (i / count) * 2 * Math.PI + Math.random() * 0.5;
+        const dist  = 40 + Math.random() * 180;
+        const size  = 5 + Math.random() * 12;
+        const color = pinks[Math.floor(Math.random() * pinks.length)];
+        p.style.cssText = `left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;background:${color};border-radius:50%;`;
         p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
         p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
         document.body.appendChild(p);
-        setTimeout(() => p.remove(), 950);
+        setTimeout(() => p.remove(), 970);
     }
 }
 
-// Lluvia masiva de emojis → luego firma final
-function emojiShowerFinale() {
-    const symbols = ['💕','✨','💖','❤️','💗','🌟','💓','🌸','💫','🎂','🥳','🎉','🌹','💝','🎁'];
-    const count   = 70;
 
-    for (let i = 0; i < count; i++) {
-        setTimeout(() => {
-            const e = document.createElement('div');
-            e.className = 'finale-emoji';
-            e.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-            e.style.left            = (2 + Math.random() * 96) + 'vw';
-            e.style.fontSize        = (18 + Math.random() * 32) + 'px';
-            e.style.animationDuration = (1.8 + Math.random() * 2.2) + 's';
-            e.style.animationDelay  = '0s';
-            document.body.appendChild(e);
-            setTimeout(() => e.remove(), 4500);
-        }, Math.random() * 2200);
+// Lluvia masiva de emojis → luego firma final
+let emojiShowerInterval = null;
+
+function emojiShowerFinale() {
+    const symbols = ['💕','✨','💖','❤️','💗','🌟','💓','🌸','💫','🎂','🥳','🎉','🌹','💝','🎁','💘','🎀'];
+
+    function spawnOne() {
+        const e = document.createElement('div');
+        e.className = 'finale-emoji';
+        e.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        e.style.left            = (1 + Math.random() * 98) + 'vw';
+        e.style.fontSize        = (16 + Math.random() * 34) + 'px';
+        e.style.animationDuration = (2 + Math.random() * 2.5) + 's';
+        document.body.appendChild(e);
+        // auto-limpiar cuando termine la animación
+        const dur = parseFloat(e.style.animationDuration) * 1000 + 200;
+        setTimeout(() => e.remove(), dur);
     }
 
-    // Después de la lluvia → firma
-    setTimeout(showLoveSignature, 3000);
+    // Ráfaga inicial para que se vea lleno enseguida
+    for (let i = 0; i < 25; i++) {
+        setTimeout(spawnOne, Math.random() * 800);
+    }
+
+    // Bucle infinito: un nuevo emoji cada ~100ms
+    emojiShowerInterval = setInterval(spawnOne, 100);
+
+    // Firma aparece a los 2 segundos, emojis siguen cayendo
+    setTimeout(showLoveSignature, 2000);
 }
 
 
